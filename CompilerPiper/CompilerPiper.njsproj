@@ -11,8 +11,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b3d238bb-3c83-458b-8d6b-0b0ba3252560</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>
-    </StartupFile>
+    <StartupFile>testharness.ts</StartupFile>
     <StartWebBrowser>False</StartWebBrowser>
     <SearchPath>
     </SearchPath>
@@ -32,7 +31,14 @@
   <ItemGroup>
     <Content Include="package.json" />
     <Content Include="README.md" />
+    <Content Include="tests.txt" />
     <Content Include="tsconfig.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="Grammar.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="testharness.ts" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>
