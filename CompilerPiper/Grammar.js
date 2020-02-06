@@ -4,9 +4,15 @@ var Grammar = /** @class */ (function () {
     function Grammar(input) {
         this.input = input;
         this.m = new Map();
+        this.terminals = new Array();
+        this.nonterminals = new Array();
+        this.matErrorList = new Array();
+        this.symbolList = new Array();
         var inputSplit = this.input.split("\n");
+        console.log(inputSplit);
         for (var i = 0; i < inputSplit.length - 1; i++) {
             var split = inputSplit[i].split(" -> ");
+            //console.log(split);
             if (split.length == 2) {
                 var id = split[0];
                 var reg = split[1];
@@ -15,26 +21,87 @@ var Grammar = /** @class */ (function () {
                         if (reg != "") {
                             try {
                                 var r = new RegExp(reg);
-                                this.m.set(id, r);
+                                this.m.set(id, reg.trim());
+                                var rSplit = reg.split(" ");
+                                if (rSplit.length == 1) {
+                                    if (this.m.get(rSplit[0]) == undefined) {
+                                        this.terminals.push(id);
+                                    }
+                                    else {
+                                        this.nonterminals.push(id);
+                                    }
+                                }
+                                else {
+                                    this.nonterminals.push(id);
+                                }
                             }
                             catch (_a) {
-                                throw new Error();
+                                throw new Error("ERROR: failed to create regex");
                             }
                         }
                         else {
-                            throw new Error();
+                            throw new Error("ERROR: empty regex");
                         }
                     }
                     else {
-                        throw new Error();
+                        this.matErrorList.push(id);
+                        this.matErrorList.push(reg);
                     }
                 }
             }
+        }
+        //combines matching IDs
+        for (var i = 0; i < this.matErrorList.length; i += 2) {
+            //console.log(this.matErrorList);
+            var erid = this.matErrorList[i];
+            var erreg = this.matErrorList[i + 1];
+            //console.log(erreg.split(" "));
+            if (this.terminals.indexOf(erid) < 0 || erreg.split(" ").length > 1) {
+                var tReg = this.m.get(erid);
+                tReg += (" | " + erreg);
+                this.m["delete"](erid);
+                this.m.set(erid, tReg);
+            }
             else {
-                throw new Error();
+                throw new Error("ERROR: repeated terminal id");
             }
         }
-        console.log(this.m);
+        //console.log(this.m);
+        //console.log("terminals: " + this.terminals);
+        //console.log("nonterminals: " + this.nonterminals);
+        //checks for undefined symbols
+        for (var i = 0; i < this.nonterminals.length; i++) {
+            var t = this.nonterminals[i];
+            var val = this.m.get(t);
+            var valSplit = val.split(" ");
+            for (var j = 0; j < valSplit.length; j++) {
+                var c = valSplit[j];
+                if (c != "|") {
+                    if (!this.terminals.includes(c) && !this.nonterminals.includes(c)) {
+                        throw new Error("ERROR: undefined symbol " + c);
+                    }
+                    this.symbolList.push(c);
+                }
+            }
+        }
+        //console.log(this.symbolList);
+        //checks for unused nonterminals
+        for (var i = 0; i < this.nonterminals.length; i++) {
+            var t = this.nonterminals[i];
+            if (!this.symbolList.includes(t)) {
+                throw new Error("ERROR: unused nonterminal " + t);
+            }
+        }
+        //checks for unused terminals
+        for (var i = 0; i < this.terminals.length; i++) {
+            var t = this.terminals[i];
+            if (!this.symbolList.includes(t)) {
+                var nt = "[" + t + "]";
+                if (!this.symbolList.includes(nt)) {
+                    throw new Error("ERROR: unused terminal " + t);
+                }
+            }
+        }
     }
     return Grammar;
 }());

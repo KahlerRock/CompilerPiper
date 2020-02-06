@@ -11,8 +11,8 @@ export class Tokenizer {
         this.grammar = grammar;
         this.idx = 0;
         this.currentLine = 1;
-        this.grammar.m.set("WHITESPACE", new RegExp("\\s+"));
-        this.grammar.m.set("COMMENT", new RegExp("(/[*](.|\n)*?[*]/)|(//.+?\\n)"));
+        this.grammar.m.set("WHITESPACE", "\\s+");
+        this.grammar.m.set("COMMENT", "(/[*](.|\n)*?[*]/)|(//.+?\\n)");
 
     }
 
