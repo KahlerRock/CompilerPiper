@@ -340,3 +340,5 @@ ASALocalRun/
 healthchecksdb
 
 node_modules/
+/CompilerPiper/expected.dot
+/CompilerPiper/actual.dot

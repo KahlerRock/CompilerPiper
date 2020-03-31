@@ -3,11 +3,13 @@ exports.__esModule = true;
 var Token_1 = require("./Token");
 var Tokenizer = /** @class */ (function () {
     function Tokenizer(grammar) {
+        this.prevTokens = [];
         this.grammar = grammar;
         this.idx = 0;
         this.currentLine = 1;
         this.grammar.m.set("WHITESPACE", "\\s+");
         this.grammar.m.set("COMMENT", "(/[*](.|\n)*?[*]/)|(//.+?\\n)");
+        this.previous = null;
     }
     Tokenizer.prototype.setInput = function (inputData) {
         this.inputData = inputData;
@@ -30,7 +32,9 @@ var Tokenizer = /** @class */ (function () {
                 var tmpLine = this.currentLine;
                 this.currentLine += lexeme.split('\n').length - 1;
                 if (sym !== "WHITESPACE" && sym !== "COMMENT") {
-                    return new Token_1.Token(sym, lexeme, tmpLine);
+                    var t = new Token_1.Token(sym, lexeme, tmpLine);
+                    this.prevTokens.push(t);
+                    return t;
                 }
                 else {
                     return this.next();
@@ -38,6 +42,21 @@ var Tokenizer = /** @class */ (function () {
             }
         }
         throw new Error();
+    };
+    Tokenizer.prototype.prev = function () {
+        if (this.prevTokens.length >= 2) {
+            return this.prevTokens[this.prevTokens.length - 2];
+        }
+        return undefined;
+    };
+    Tokenizer.prototype.peek = function () {
+        var tmpidx = this.idx;
+        var tmpcl = this.currentLine;
+        var peekTok = this.next();
+        this.idx = tmpidx;
+        this.currentLine = tmpcl;
+        this.prevTokens.pop();
+        return peekTok;
     };
     return Tokenizer;
 }());

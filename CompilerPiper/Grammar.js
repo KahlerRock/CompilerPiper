@@ -84,25 +84,49 @@ var Grammar = /** @class */ (function () {
                 }
             }
         }
+        /*let set = new Set<string>();
+        let node = new NodeType(this.nonterminals[0]);
+
+        this.dfs(node, set);
+
+        console.log(set);
+        */
         //console.log(this.symbolList);
         //checks for unused nonterminals
         for (var i = 0; i < this.nonterminals.length; i++) {
             var t = this.nonterminals[i];
-            if (!this.symbolList.includes(t)) {
+            if (!this.nonterminals.includes(t)) {
                 throw new Error("ERROR: unused nonterminal " + t);
             }
         }
         //checks for unused terminals
         for (var i = 0; i < this.terminals.length; i++) {
             var t = this.terminals[i];
-            if (!this.symbolList.includes(t)) {
+            if (!this.terminals.includes(t)) {
                 var nt = "[" + t + "]";
-                if (!this.symbolList.includes(nt)) {
+                if (!this.terminals.includes(nt)) {
                     throw new Error("ERROR: unused terminal " + t);
                 }
             }
         }
     }
+    Grammar.prototype.dfs = function (N, v) {
+        var _this = this;
+        v.add(N.label);
+        var val = this.m.get(N.label);
+        var valSplit = val.split(" ");
+        for (var i = 0; i < valSplit.length; i++) {
+            var t = valSplit[i];
+            if (t != "," && t != "|") {
+                v.add(t);
+            }
+        }
+        N.n.forEach(function (w) {
+            if (!v.has(w.label)) {
+                _this.dfs(w, v);
+            }
+        });
+    };
     return Grammar;
 }());
 exports.Grammar = Grammar;

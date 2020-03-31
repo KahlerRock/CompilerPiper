@@ -1,3 +1,4 @@
+import { NodeType } from "./NodeType";
 
 export class Grammar {
     input: string;
@@ -6,6 +7,7 @@ export class Grammar {
     nonterminals: Array<string>;
     matErrorList: Array<string>;
     symbolList: Array<string>;
+    
     constructor(input: string) {
         this.input = input;
         this.m = new Map();
@@ -95,13 +97,20 @@ export class Grammar {
             }
         }
 
+        /*let set = new Set<string>();
+        let node = new NodeType(this.nonterminals[0]);
+
+        this.dfs(node, set);
+
+        console.log(set);
+        */
 
         //console.log(this.symbolList);
 
         //checks for unused nonterminals
         for (let i = 0; i < this.nonterminals.length; i++) {
             let t = this.nonterminals[i];
-            if (!this.symbolList.includes(t)) {
+            if (!this.nonterminals.includes(t)) {
                 throw new Error("ERROR: unused nonterminal " + t);
             }
         }
@@ -109,14 +118,34 @@ export class Grammar {
         //checks for unused terminals
         for (let i = 0; i < this.terminals.length; i++) {
             let t = this.terminals[i];
-            if (!this.symbolList.includes(t)) {
+            if (!this.terminals.includes(t)) {
                 let nt = "[" + t + "]";
-                if (!this.symbolList.includes(nt)) {
+                if (!this.terminals.includes(nt)) {
                     throw new Error("ERROR: unused terminal " + t);
                 }
             }
         }
 
+    }
 
+    dfs(N: NodeType, v: Set<string>) {
+        v.add(N.label);
+
+        let val = this.m.get(N.label);
+        let valSplit = val.split(" ");
+
+        for (let i = 0; i < valSplit.length; i++) {
+            let t = valSplit[i];
+            if (t != "," && t != "|") {
+                v.add(t);
+            }
+        }
+
+
+        N.n.forEach((w: NodeType) => {
+            if (!v.has(w.label)) {
+                this.dfs(w, v);
+            }
+        })
     }
 }
