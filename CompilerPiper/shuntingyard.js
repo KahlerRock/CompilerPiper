@@ -98,13 +98,6 @@ function parse(input) {
         }
         else if (sym == "ID") {
             operandStack.push(new NodeType_1.TreeNode(sym, t));
-            //let peekTok = tokenizer.peek();
-            //console.log(peekTok);
-            /*if (peekTok != undefined && peekTok.sym == "LP") {
-                operatorStack.push(new TreeNode("func-call", t));
-
-            }*/
-            //console.log(operandStack);
         }
         else if (sym == "RP") {
             while (true) {

@@ -1,4 +1,5 @@
 import { NodeType } from "./NodeType";
+import { Readable } from "stream";
 
 export class Grammar {
     input: string;
@@ -7,6 +8,7 @@ export class Grammar {
     nonterminals: Array<string>;
     matErrorList: Array<string>;
     symbolList: Array<string>;
+    dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals: boolean;
     
     constructor(input: string) {
         this.input = input;
@@ -15,14 +17,17 @@ export class Grammar {
         this.nonterminals = new Array<string>();
         this.matErrorList = new Array<string>();
         this.symbolList = new Array<string>();
+        this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals = false;
 
         let inputSplit = this.input.split("\n");
 
-        console.log(inputSplit);
+        //console.log("inputSplit: " + inputSplit);
         for (let i = 0; i < inputSplit.length - 1; i++) {
-
+            if (inputSplit[i] == '') {
+                this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals = true;
+            }
             let split = inputSplit[i].split(" -> ");
-            //console.log(split);
+            //console.log("split: " + split);
             if (split.length == 2) {
                 let id = split[0];
                 let reg = split[1];
@@ -35,15 +40,10 @@ export class Grammar {
                                 let r = new RegExp(reg);
                                 this.m.set(id, reg.trim());
 
-                                let rSplit = reg.split(" ");
-                                if (rSplit.length == 1) {
-                                    if (this.m.get(rSplit[0]) == undefined) {
-                                        this.terminals.push(id);
-                                    } else {
-                                        this.nonterminals.push(id);
-                                    }
+                                if (!this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals) {
+                                    this.terminals.push(id);
                                 } else {
-                                    this.nonterminals.push(id);                                    
+                                    this.nonterminals.push(id);
                                 }
                             } catch{
                                 throw new Error("ERROR: failed to create regex");
@@ -58,6 +58,9 @@ export class Grammar {
                 }
             }
         }
+
+        //console.log("nonterminals: " + this.nonterminals);
+        //console.log("terminals: " + this.terminals);
 
         //combines matching IDs
         for (let i = 0; i < this.matErrorList.length; i += 2) {
@@ -88,8 +91,8 @@ export class Grammar {
             for (let j = 0; j < valSplit.length; j++) {
                 let c = valSplit[j];
                 if (c != "|") {
-                    if (!this.terminals.includes(c) && !this.nonterminals.includes(c)) {
-                        throw new Error("ERROR: undefined symbol " + c);
+                    if (!this.terminals.includes(c) && !this.nonterminals.includes(c) && c != "lambda") {
+                        //throw new Error("ERROR: undefined symbol " + c);
                     }
 
                     this.symbolList.push(c);
@@ -126,26 +129,70 @@ export class Grammar {
             }
         }
 
+        /*let search: Set<string> = new Set();
+        let start_node: NodeType;
+        if (this.nonterminals.length !== 0) {
+            start_node = new NodeType(this.nonterminals[0][0]);
+            this.dfs(start_node, search);
+        }*/
     }
 
-    dfs(N: NodeType, v: Set<string>) {
-        v.add(N.label);
+    /*dfs(n: NodeType, v: Set<string>) {
+        v.add(n.label);
+        let term = this.nonterminals.find(t => t[0] == n.label);
 
-        let val = this.m.get(N.label);
-        let valSplit = val.split(" ");
+        if (term != undefined) {
+            let str = term[1];
+            str.replace(new RegExp('\\|', 'g'), ' ');
+            str.replace(new RegExp(',', 'g'), ' ');
+            let strSplit = str.split(new RegExp(' ', 'g'));
+            for (let t in strSplit) {
+                let tt = t.trim();
 
-        for (let i = 0; i < valSplit.length; i++) {
-            let t = valSplit[i];
-            if (t != "," && t != "|") {
-                v.add(t);
+                if (tt != '') {
+                    if (tt == 'lambda') {
+                        tt = '';
+                    }
+                    let nn: NodeType = new NodeType(tt);
+                    n.n.push(nn);
+                }
             }
         }
-
-
-        N.n.forEach((w: NodeType) => {
-            if (!v.has(w.label)) {
-                this.dfs(w, v);
+        if (n.n != undefined) {
+            for (let i = 0; i < n.n.length; i++) {
+                let t = n.n[i];
+                if (!v.has(t.label)) {
+                    this.dfs(t, v);
+                }
             }
-        })
+        }
+    }*/
+
+    getNullable(): Set<string> {
+        let nullable: Set<string> = new Set<string>();
+        let stable = true;
+
+        while (true) {
+            stable = true;
+            for (let i = 0; i < this.nonterminals.length; i++) {
+                let term = this.nonterminals[i];
+                if (!nullable.has(term)) {
+                    let val = this.m.get(term);
+
+                    let valSplit = val.split("|");
+
+                    for (let j = 0; j < valSplit.length; j++) {
+                        if (valSplit[j].trim().split(' ').every((s: string) => nullable.has(s) || s == "lambda")) {
+                            nullable.add(term);
+                            stable = false;
+                        }
+                    }
+                }
+            }
+            if (stable) {
+                break;
+            }
+        }
+        return nullable;
     }
 }

@@ -8,11 +8,15 @@ var Grammar = /** @class */ (function () {
         this.nonterminals = new Array();
         this.matErrorList = new Array();
         this.symbolList = new Array();
+        this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals = false;
         var inputSplit = this.input.split("\n");
-        console.log(inputSplit);
+        //console.log("inputSplit: " + inputSplit);
         for (var i = 0; i < inputSplit.length - 1; i++) {
+            if (inputSplit[i] == '') {
+                this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals = true;
+            }
             var split = inputSplit[i].split(" -> ");
-            //console.log(split);
+            //console.log("split: " + split);
             if (split.length == 2) {
                 var id = split[0];
                 var reg = split[1];
@@ -22,14 +26,8 @@ var Grammar = /** @class */ (function () {
                             try {
                                 var r = new RegExp(reg);
                                 this.m.set(id, reg.trim());
-                                var rSplit = reg.split(" ");
-                                if (rSplit.length == 1) {
-                                    if (this.m.get(rSplit[0]) == undefined) {
-                                        this.terminals.push(id);
-                                    }
-                                    else {
-                                        this.nonterminals.push(id);
-                                    }
+                                if (!this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals) {
+                                    this.terminals.push(id);
                                 }
                                 else {
                                     this.nonterminals.push(id);
@@ -50,6 +48,8 @@ var Grammar = /** @class */ (function () {
                 }
             }
         }
+        //console.log("nonterminals: " + this.nonterminals);
+        //console.log("terminals: " + this.terminals);
         //combines matching IDs
         for (var i = 0; i < this.matErrorList.length; i += 2) {
             //console.log(this.matErrorList);
@@ -77,8 +77,8 @@ var Grammar = /** @class */ (function () {
             for (var j = 0; j < valSplit.length; j++) {
                 var c = valSplit[j];
                 if (c != "|") {
-                    if (!this.terminals.includes(c) && !this.nonterminals.includes(c)) {
-                        throw new Error("ERROR: undefined symbol " + c);
+                    if (!this.terminals.includes(c) && !this.nonterminals.includes(c) && c != "lambda") {
+                        //throw new Error("ERROR: undefined symbol " + c);
                     }
                     this.symbolList.push(c);
                 }
@@ -109,23 +109,68 @@ var Grammar = /** @class */ (function () {
                 }
             }
         }
+        /*let search: Set<string> = new Set();
+        let start_node: NodeType;
+        if (this.nonterminals.length !== 0) {
+            start_node = new NodeType(this.nonterminals[0][0]);
+            this.dfs(start_node, search);
+        }*/
     }
-    Grammar.prototype.dfs = function (N, v) {
-        var _this = this;
-        v.add(N.label);
-        var val = this.m.get(N.label);
-        var valSplit = val.split(" ");
-        for (var i = 0; i < valSplit.length; i++) {
-            var t = valSplit[i];
-            if (t != "," && t != "|") {
-                v.add(t);
+    /*dfs(n: NodeType, v: Set<string>) {
+        v.add(n.label);
+        let term = this.nonterminals.find(t => t[0] == n.label);
+
+        if (term != undefined) {
+            let str = term[1];
+            str.replace(new RegExp('\\|', 'g'), ' ');
+            str.replace(new RegExp(',', 'g'), ' ');
+            let strSplit = str.split(new RegExp(' ', 'g'));
+            for (let t in strSplit) {
+                let tt = t.trim();
+
+                if (tt != '') {
+                    if (tt == 'lambda') {
+                        tt = '';
+                    }
+                    let nn: NodeType = new NodeType(tt);
+                    n.n.push(nn);
+                }
             }
         }
-        N.n.forEach(function (w) {
-            if (!v.has(w.label)) {
-                _this.dfs(w, v);
+        if (n.n != undefined) {
+            for (let i = 0; i < n.n.length; i++) {
+                let t = n.n[i];
+                if (!v.has(t.label)) {
+                    this.dfs(t, v);
+                }
             }
-        });
+        }
+    }*/
+    Grammar.prototype.getNullable = function () {
+        var nullable = new Set();
+        var stable = true;
+        while (true) {
+            stable = true;
+            for (var i = 0; i < this.nonterminals.length; i++) {
+                var term = this.nonterminals[i];
+                if (!nullable.has(term)) {
+                    var val = this.m.get(term);
+                    //console.log("val: " + val);
+                    var valSplit = val.split("|");
+                    //console.log("valSplit -- " + valSplit);
+                    for (var j = 0; j < valSplit.length; j++) {
+                        if (valSplit[j].trim().split(' ').every(function (s) { return nullable.has(s) || s == "lambda"; })) {
+                            nullable.add(term);
+                            stable = false;
+                        }
+                    }
+                }
+            }
+            if (stable) {
+                break;
+            }
+        }
+        return nullable;
     };
     return Grammar;
 }());
