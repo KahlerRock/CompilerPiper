@@ -6,6 +6,7 @@ export class Grammar {
     m: Map<string, string>;
     terminals: Array<string>;
     nonterminals: Array<string>;
+    productions: Array<string>;
     matErrorList: Array<string>;
     symbolList: Array<string>;
     dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals: boolean;
@@ -17,6 +18,7 @@ export class Grammar {
         this.nonterminals = new Array<string>();
         this.matErrorList = new Array<string>();
         this.symbolList = new Array<string>();
+        this.productions = new Array<string>();
         this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals = false;
 
         let inputSplit = this.input.split("\n");
@@ -129,6 +131,14 @@ export class Grammar {
             }
         }
 
+        for (let i = 0; i < this.nonterminals.length; i++) {
+            let p = this.m.get(this.nonterminals[i]);
+            let ps = p.split(new RegExp("\\|", "g"));
+            for (let j = 0; j < ps.length; j++) {
+                this.productions.push(ps[j]);
+            }
+        }
+
         /*let search: Set<string> = new Set();
         let start_node: NodeType;
         if (this.nonterminals.length !== 0) {
@@ -194,5 +204,80 @@ export class Grammar {
             }
         }
         return nullable;
+    }
+
+    getFirst(): Map<string, Set<string>> {
+        let first = new Map<string, Set<string>>();
+        let nullableVals = this.getNullable();
+        let stable = true;
+        let count = 0;
+
+        for (let S in this.terminals) {
+            let s = this.terminals[S];
+            let firstSet = new Set<string>();
+            firstSet.add(s);
+            first.set(s, firstSet);
+        }
+
+        while (true) {
+            stable = true;
+            for (let N in this.nonterminals) {
+                let n = this.nonterminals[N];
+                let prod = this.m.get(n);
+                if (prod != undefined) {
+                    prod = prod.replace("lambda", '');
+                    //console.log("prod != undefined");
+                    let prodSplit = prod.split("|");
+                    //console.log("prodSplit: " + prodSplit);
+                    for (let X in prodSplit) {
+                        let x = prodSplit[X].trim();
+                        let pSplit = x.split(' ');
+                        for (let Y in pSplit) {
+                            let y = pSplit[Y];
+                            let union = this.unionSets(first.get(n), first.get(y));
+                            let base = first;
+
+                            //console.log(first.get(n));
+                            first.set(n, union);
+
+                            if (base.size != first.size) {
+                                stable = false;
+                            }
+
+                            if (!nullableVals.has(y)) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (stable) {
+                //console.log("count: " + count + "\tprodCount: " + prodCount);
+                if (++count >= this.productions.length) {
+                    break;
+                }
+            }
+        }
+        return first;
+    }
+
+    private unionSets(s1: Set<string>, s2: Set<string>): Set<string> {
+        //console.log("s1");
+        //console.log(s1);
+        //console.log("s2");
+        //console.log(s2);
+        let union = s1;
+        if (union == undefined) {
+            union = new Set<string>();
+        }
+
+        if (s2 == undefined) {
+            s2 = new Set<string>();
+        }
+
+        s2.forEach(union.add, union);
+
+        return union;
+
     }
 }

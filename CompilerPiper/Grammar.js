@@ -8,6 +8,7 @@ var Grammar = /** @class */ (function () {
         this.nonterminals = new Array();
         this.matErrorList = new Array();
         this.symbolList = new Array();
+        this.productions = new Array();
         this.dealingWithTerminalsOrNonterminalsInTheWayAlecSaysTodoItArbitrarilyFalseMeaningTerminals = false;
         var inputSplit = this.input.split("\n");
         //console.log("inputSplit: " + inputSplit);
@@ -109,6 +110,13 @@ var Grammar = /** @class */ (function () {
                 }
             }
         }
+        for (var i = 0; i < this.nonterminals.length; i++) {
+            var p = this.m.get(this.nonterminals[i]);
+            var ps = p.split(new RegExp("\\|", "g"));
+            for (var j = 0; j < ps.length; j++) {
+                this.productions.push(ps[j]);
+            }
+        }
         /*let search: Set<string> = new Set();
         let start_node: NodeType;
         if (this.nonterminals.length !== 0) {
@@ -155,9 +163,7 @@ var Grammar = /** @class */ (function () {
                 var term = this.nonterminals[i];
                 if (!nullable.has(term)) {
                     var val = this.m.get(term);
-                    //console.log("val: " + val);
                     var valSplit = val.split("|");
-                    //console.log("valSplit -- " + valSplit);
                     for (var j = 0; j < valSplit.length; j++) {
                         if (valSplit[j].trim().split(' ').every(function (s) { return nullable.has(s) || s == "lambda"; })) {
                             nullable.add(term);
@@ -171,6 +177,70 @@ var Grammar = /** @class */ (function () {
             }
         }
         return nullable;
+    };
+    Grammar.prototype.getFirst = function () {
+        var first = new Map();
+        var nullableVals = this.getNullable();
+        var stable = true;
+        var count = 0;
+        for (var S in this.terminals) {
+            var s = this.terminals[S];
+            var firstSet = new Set();
+            firstSet.add(s);
+            first.set(s, firstSet);
+        }
+        while (true) {
+            stable = true;
+            for (var N in this.nonterminals) {
+                var n = this.nonterminals[N];
+                var prod = this.m.get(n);
+                if (prod != undefined) {
+                    prod = prod.replace("lambda", '');
+                    //console.log("prod != undefined");
+                    var prodSplit = prod.split("|");
+                    //console.log("prodSplit: " + prodSplit);
+                    for (var X in prodSplit) {
+                        var x = prodSplit[X].trim();
+                        var pSplit = x.split(' ');
+                        for (var Y in pSplit) {
+                            var y = pSplit[Y];
+                            var union = this.unionSets(first.get(n), first.get(y));
+                            var base = first;
+                            //console.log(first.get(n));
+                            first.set(n, union);
+                            if (base.size != first.size) {
+                                stable = false;
+                            }
+                            if (!nullableVals.has(y)) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (stable) {
+                //console.log("count: " + count + "\tprodCount: " + prodCount);
+                if (++count >= this.productions.length) {
+                    break;
+                }
+            }
+        }
+        return first;
+    };
+    Grammar.prototype.unionSets = function (s1, s2) {
+        //console.log("s1");
+        //console.log(s1);
+        //console.log("s2");
+        //console.log(s2);
+        var union = s1;
+        if (union == undefined) {
+            union = new Set();
+        }
+        if (s2 == undefined) {
+            s2 = new Set();
+        }
+        s2.forEach(union.add, union);
+        return union;
     };
     return Grammar;
 }());
