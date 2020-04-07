@@ -1,6 +1,3 @@
-import { NodeType } from "./NodeType";
-import { Readable } from "stream";
-
 export class Grammar {
     input: string;
     m: Map<string, string>;
