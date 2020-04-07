@@ -227,11 +227,80 @@ var Grammar = /** @class */ (function () {
         }
         return first;
     };
+    Grammar.prototype.getFollow = function () {
+        var follow = new Map();
+        var stable = true;
+        var nullableVals = this.getNullable();
+        var firstVals = this.getFirst();
+        var count = 0;
+        var brokeOut = false;
+        var base = follow;
+        follow.set(this.nonterminals[0], new Set().add("$"));
+        while (true) {
+            stable = true;
+            for (var N = 0; N < this.nonterminals.length; N++) {
+                var n = this.nonterminals[N];
+                var productions = this.m.get(n).split("|");
+                var _loop_1 = function (P) {
+                    var prep = productions[P].trim().split(" ");
+                    var p = [];
+                    prep.forEach(function (pppoopoo) { if (pppoopoo != "" && pppoopoo.length != 0)
+                        p.push(pppoopoo); });
+                    for (var i = 0; i < p.length; i++) {
+                        var x = p[i].trim();
+                        if (this_1.nonterminals.includes(x)) {
+                            brokeOut = false;
+                            base = follow;
+                            for (var Y = i + 1; Y < p.length; Y++) {
+                                var y = p[Y].trim();
+                                var t0 = follow.get(x);
+                                var t1 = firstVals.get(y);
+                                if (t0 == undefined) {
+                                    t0 = new Set();
+                                }
+                                if (t1 == undefined) {
+                                    t1 = new Set();
+                                }
+                                var union = this_1.unionSets(t0, t1);
+                                follow.set(x, union);
+                                if (base.size != follow.size) {
+                                    stable = false;
+                                }
+                                if (!nullableVals.has(y)) {
+                                    brokeOut = true;
+                                    break;
+                                }
+                            }
+                            if (!brokeOut) {
+                                var fx = follow.get(x);
+                                var fn = follow.get(n);
+                                if (fx == undefined) {
+                                    fx = new Set();
+                                }
+                                if (fn == undefined) {
+                                    fn = new Set();
+                                }
+                                var union1 = this_1.unionSets(fx, fn);
+                                follow.set(x, union1);
+                            }
+                        }
+                    }
+                };
+                var this_1 = this;
+                for (var P = 0; P < productions.length; P++) {
+                    _loop_1(P);
+                }
+            }
+            if (stable) {
+                if (++count >= this.productions.length) {
+                    break;
+                }
+            }
+        }
+        //console.log(follow);
+        return follow;
+    };
     Grammar.prototype.unionSets = function (s1, s2) {
-        //console.log("s1");
-        //console.log(s1);
-        //console.log("s2");
-        //console.log(s2);
         var union = s1;
         if (union == undefined) {
             union = new Set();
@@ -239,7 +308,9 @@ var Grammar = /** @class */ (function () {
         if (s2 == undefined) {
             s2 = new Set();
         }
-        s2.forEach(union.add, union);
+        //console.log("union: " + union.size + "\ts2: " + s2.size);
+        s2.forEach(function (key) { return union.add(key); });
+        //console.log("post union: " + union.size);
         return union;
     };
     return Grammar;

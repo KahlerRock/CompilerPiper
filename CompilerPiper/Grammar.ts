@@ -1,5 +1,6 @@
 import { NodeType } from "./NodeType";
 import { Readable } from "stream";
+import { stringify } from "querystring";
 
 export class Grammar {
     input: string;
@@ -261,12 +262,101 @@ export class Grammar {
         return first;
     }
 
+    getFollow(): Map<string, Set<string>> {
+        let follow = new Map<string, Set<string>>();
+        let stable = true;
+        let nullableVals = this.getNullable();
+        let firstVals = this.getFirst();
+        let count = 0;
+        let brokeOut = false;
+        let base = follow;
+
+        follow.set(this.nonterminals[0], new Set<string>().add("$"));
+
+        while (true) {
+            stable = true;
+            for (let N = 0; N < this.nonterminals.length; N++) {
+
+                let n = this.nonterminals[N];
+
+                let productions = this.m.get(n).split("|");
+
+
+                for (let P = 0; P < productions.length; P++) {
+                    let prep = productions[P].trim().split(" ");
+                    let p: string[] = [];
+
+                    prep.forEach(pppoopoo => { if(pppoopoo != "" && pppoopoo.length != 0) p.push(pppoopoo) })
+
+                    for (let i = 0; i < p.length; i++) {
+                        let x = p[i].trim();
+
+                        if (this.nonterminals.includes(x)) {
+                            brokeOut = false;
+
+                            base = follow;
+                            for (let Y = i + 1; Y < p.length; Y++) {
+                                let y = p[Y].trim();
+
+                                let t0 = follow.get(x);
+                                let t1 = firstVals.get(y);
+
+                                if (t0 == undefined) {
+                                    t0 = new Set<string>();
+                                }
+
+                                if (t1 == undefined) {
+                                    t1 = new Set<string>();
+                                }
+
+                                let union = this.unionSets(t0, t1);
+
+                                follow.set(x, union);
+
+                                if (base.size != follow.size) {
+                                    stable = false;
+                                }
+
+                                if (!nullableVals.has(y)) {
+                                    brokeOut = true;
+                                    break;
+                                }
+                            }
+
+                            if (!brokeOut) {
+                                let fx = follow.get(x);
+                                let fn = follow.get(n);
+
+                                if (fx == undefined) {
+                                    fx = new Set<string>();
+                                }
+
+                                if (fn == undefined) {
+                                    fn = new Set<string>();
+                                }
+
+                                let union1 = this.unionSets(fx, fn);
+                                follow.set(x, union1);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (stable) {
+                if (++count >= this.productions.length) {
+                    break;
+                }
+            }
+        }
+
+        //console.log(follow);
+        return follow;
+    }
+
     private unionSets(s1: Set<string>, s2: Set<string>): Set<string> {
-        //console.log("s1");
-        //console.log(s1);
-        //console.log("s2");
-        //console.log(s2);
         let union = s1;
+
         if (union == undefined) {
             union = new Set<string>();
         }
@@ -274,8 +364,10 @@ export class Grammar {
         if (s2 == undefined) {
             s2 = new Set<string>();
         }
+        //console.log("union: " + union.size + "\ts2: " + s2.size);
 
-        s2.forEach(union.add, union);
+        s2.forEach((key) => union.add(key));
+        //console.log("post union: " + union.size);
 
         return union;
 
