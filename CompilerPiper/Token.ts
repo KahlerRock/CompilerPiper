@@ -10,9 +10,6 @@ export class Token {
     }
 
     toString() {
-        let sym = this.sym.padStart(20, ' ');
-        let line = "" + this.line;
-        line = line.padEnd(4, ' ');
-        return `[${sym} ${line} ${this.lexeme}]`;
+        return `[${this.sym} ${this.line} ${this.lexeme}]`;
     }
 }

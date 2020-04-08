@@ -7,10 +7,7 @@ var Token = /** @class */ (function () {
         this.line = line;
     }
     Token.prototype.toString = function () {
-        var sym = this.sym.padStart(20, ' ');
-        var line = "" + this.line;
-        line = line.padEnd(4, ' ');
-        return "[" + sym + " " + line + " " + this.lexeme + "]";
+        return "[" + this.sym + " " + this.line + " " + this.lexeme + "]";
     };
     return Token;
 }());
