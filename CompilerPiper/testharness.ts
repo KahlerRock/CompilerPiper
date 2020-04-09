@@ -38,11 +38,13 @@ function testWithFile(fname:string, doBonus: boolean ): boolean{
         try{
             actual = parse(input);
         } catch(e){
-            actual = undefined;
+            //actual = undefined;
         }
          
         if (!treesAreSame(actual, expected)) {
             console.log(expected, actual);
+            //console.log(actual.toString());
+            //console.log(expected.children, actual.children);
             console.log("Test "+name+" failed: Tree mismatch");
             return false;
         } 

@@ -23,28 +23,28 @@ export class Tokenizer {
 
     setInput(inputData: string) {
         this.inputData = inputData;
+        this.currentLine = 1;
+        this.idx = 0;
     }
 
     next(): Token {
-        console.log("this.next()");
         if (this.idx >= (this.inputData.length - 1)) {
             let cl = this.currentLine;
-            this.currentLine = 1;
-            this.idx = 0;
             return new Token("$", undefined, cl);
         }
-        console.log("not $");
         for (let i = 0; i < this.grammar.m.size; i++) {
             let sym = Array.from(this.grammar.m.keys())[i];
 
-            let rex = new RegExp(this.grammar.m.get(sym), "gy");
-
+            let rex = new RegExp(this.grammar.m.get(sym), "y");
+            //console.log(sym);
             rex.lastIndex = this.idx;
-
+            //console.log("rex: " + rex);
+            //console.log(this.inputData);
             let mat = rex.exec(this.inputData);
-            console.log("before mat");
+            //console.log(mat);
+            //console.log("before mat");
             if (mat) {
-                console.log("mat");
+//console.log("mat");
                 let lexeme = mat[0];
                 this.idx += lexeme.length;
                 let tmpLine = this.currentLine;
@@ -54,11 +54,12 @@ export class Tokenizer {
                     this.prevTokens.push(t);
                     return t;
                 } else {
-                    console.log("returning");
+                    //console.log("returning");
                     return this.next();
                 }
             }
         }
+        //console.log("before the throw");
         throw new Error("NOTHING TO RETURN");
     }
 

@@ -13,24 +13,26 @@ var Tokenizer = /** @class */ (function () {
     }
     Tokenizer.prototype.setInput = function (inputData) {
         this.inputData = inputData;
+        this.currentLine = 1;
+        this.idx = 0;
     };
     Tokenizer.prototype.next = function () {
-        console.log("this.next()");
         if (this.idx >= (this.inputData.length - 1)) {
             var cl = this.currentLine;
-            this.currentLine = 1;
-            this.idx = 0;
             return new Token_1.Token("$", undefined, cl);
         }
-        console.log("not $");
         for (var i = 0; i < this.grammar.m.size; i++) {
             var sym = Array.from(this.grammar.m.keys())[i];
-            var rex = new RegExp(this.grammar.m.get(sym), "gy");
+            var rex = new RegExp(this.grammar.m.get(sym), "y");
+            //console.log(sym);
             rex.lastIndex = this.idx;
+            //console.log("rex: " + rex);
+            //console.log(this.inputData);
             var mat = rex.exec(this.inputData);
-            console.log("before mat");
+            //console.log(mat);
+            //console.log("before mat");
             if (mat) {
-                console.log("mat");
+                //console.log("mat");
                 var lexeme = mat[0];
                 this.idx += lexeme.length;
                 var tmpLine = this.currentLine;
@@ -41,11 +43,12 @@ var Tokenizer = /** @class */ (function () {
                     return t;
                 }
                 else {
-                    console.log("returning");
+                    //console.log("returning");
                     return this.next();
                 }
             }
         }
+        //console.log("before the throw");
         throw new Error("NOTHING TO RETURN");
     };
     Tokenizer.prototype.prev = function () {

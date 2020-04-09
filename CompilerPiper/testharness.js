@@ -30,10 +30,12 @@ function testWithFile(fname, doBonus) {
             actual = Parser_1.parse(input);
         }
         catch (e) {
-            actual = undefined;
+            //actual = undefined;
         }
         if (!treesAreSame(actual, expected)) {
             console.log(expected, actual);
+            //console.log(actual.toString());
+            //console.log(expected.children, actual.children);
             console.log("Test " + name_1 + " failed: Tree mismatch");
             return false;
         }
