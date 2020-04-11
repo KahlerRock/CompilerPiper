@@ -2,6 +2,7 @@
 exports.__esModule = true;
 var Token_1 = require("./Token");
 var NodeType_1 = require("./NodeType");
+var asm_1 = require("./asm");
 var antlr4 = require('./antlr4');
 var Lexer = require('./gramLexer.js').gramLexer;
 var Parser = require('./gramParser.js').gramParser;
@@ -27,7 +28,7 @@ function parse(txt) {
     parser.addErrorListener(handler);
     var antlrroot = parser.program();
     var root = walk(parser, antlrroot);
-    return root.toString();
+    return asm_1.makeAsm(root);
 }
 exports.parse = parse;
 function walk(parser, node) {

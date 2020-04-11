@@ -1,5 +1,6 @@
 import { Token } from './Token';
 import { TreeNode } from './NodeType';
+import { makeAsm } from './asm';
 
 declare var require: any;
 let antlr4 = require('./antlr4');
@@ -30,8 +31,8 @@ export function parse(txt: string): string {
     let antlrroot = parser.program();
 
     let root: TreeNode = walk(parser, antlrroot);
-
-    return root.toString();
+   
+    return makeAsm(root);
 }
 
 function walk(parser: any, node: any) {
@@ -58,3 +59,4 @@ function walk(parser: any, node: any) {
         return N;
     }
 }
+

@@ -4,7 +4,8 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>CompilerPiper</Name>
     <RootNamespace>CompilerPiper</RootNamespace>
-    <Environment>NODE_PATH=.</Environment>
+    <Environment>NODE_PATH=.
+</Environment>
     <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -39,13 +40,16 @@
     <Content Include="gramLexer.tokens" />
     <Content Include="gramListener.js" />
     <Content Include="gramParser.js" />
-    <Content Include="input1.txt" />
-    <Content Include="input2.txt" />
+    <Content Include="inputs.json" />
     <Content Include="package.json" />
     <Content Include="README.md" />
     <Content Include="tsconfig.json" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="asm.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="exetools.ts" />
     <TypeScriptCompile Include="Grammar.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
