@@ -189,7 +189,7 @@ function factorNodeCode(n) {
     //console.log("factor");
     //console.log(n);
     var child = n.children[0];
-    ////console.log(child);
+    //console.log(child.sym);
     switch (child.sym) {
         case "NUM":
             var i = parseInt(child.token.lexeme, 10);
@@ -208,7 +208,36 @@ function factorNodeCode(n) {
             emit("push rax");
             return VarType.FLOAT;
         case "LP":
-            return exprNodeCode(n.children[1]);
+            if (n.children.length == 3) {
+                return exprNodeCode(n.children[1]);
+            }
+            else if (n.children.length == 4) {
+                var termType = n.children[1].token.lexeme;
+                var factorType = factorNodeCode(n.children[3]);
+                if (termType == 'int') {
+                    if (factorType != VarType.INT) {
+                        floatPop("xmm0");
+                        emit("roundsd xmm0, xmm0, 0xb");
+                        emit("cvtsd2si rax, xmm0");
+                        emit("push rax");
+                    }
+                    return VarType.INT;
+                }
+                else if (termType == 'double') {
+                    if (factorType != VarType.FLOAT) {
+                        emit("pop rax");
+                        emit("cvtsi2sd xmm0, rax");
+                        floatPush("xmm0");
+                    }
+                    return VarType.FLOAT;
+                }
+                else {
+                    throw new Error("WRONG TYPE");
+                }
+            }
+            else {
+                throw new Error("WRONG CHILDREN LENGTH");
+            }
         default:
             ICE();
     }

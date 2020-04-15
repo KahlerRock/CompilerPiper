@@ -32,6 +32,7 @@ WRITE : 'write';
 CLOSE : 'close';
 ID : [A-Za-z_]+;
 
+
 program : braceblock;
 stmts : stmt stmts | ;
 stmt : cond | loop | returnStmt SEMI;
@@ -47,4 +48,4 @@ rel : sum RELOP sum | sum;
 sum : sum PLUS term | sum MINUS term | term;
 term : term MULOP neg | neg;
 neg : MINUS neg | factor;
-factor : NUM | FPNUM | LP expr RP;
+factor : NUM | FPNUM | LP expr RP | LP TYPE RP factor;
