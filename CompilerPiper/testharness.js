@@ -1,7 +1,7 @@
 "use strict";
 exports.__esModule = true;
 //to start at a given test number, change this
-var startAt = 1;
+var startAt = 0;
 //to stop early, change this
 var endAt = 99999;
 //set this to true to get more status messages

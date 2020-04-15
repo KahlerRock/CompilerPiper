@@ -47,4 +47,4 @@ rel : sum RELOP sum | sum;
 sum : sum PLUS term | sum MINUS term | term;
 term : term MULOP neg | neg;
 neg : MINUS neg | factor;
-factor : NUM | LP expr RP;
+factor : NUM | FPNUM | LP expr RP;

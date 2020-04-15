@@ -4,7 +4,7 @@
 
 
 //to start at a given test number, change this
-let startAt=1;
+let startAt=0;
 
 //to stop early, change this
 let endAt = 99999;

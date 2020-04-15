@@ -53,8 +53,13 @@ function stmtNodeCode(n: TreeNode) {
 function returnstmtNodeCode(n: TreeNode) {
     //console.log("returnstmt");
     //console.log(n);
-    exprNodeCode(n.children[1]);
-    emit("pop rax");
+    let exprType = exprNodeCode(n.children[1]);
+    if (exprType == VarType.INT) {
+        emit("pop rax");
+    } else if (exprType == VarType.FLOAT) {
+        floatPop("xmm0");
+        emit("cvtsd2si rax, xmm0");
+    }
     emit("ret");
 }
 
@@ -92,12 +97,13 @@ function notexpNodeCode(n: TreeNode): VarType {
         return relexpNodeCode(n.children[0]);
     } else {
         let notTerm = notexpNodeCode(n.children[1]);
+        //console.log(notTerm);
         convertStackTopToZeroOrOneInteger(notTerm);
         emit("pop rbx");
         emit("mov qword rax, 1");
         emit("sub rax, rbx");
         emit("push rax");
-        return notTerm;
+        return VarType.INT;
     }
 }
 
@@ -110,9 +116,9 @@ function termNodeCode(n: TreeNode): VarType {
         let negType = negNodeCode(n.children[2]);
 
         if (isSameType(termType, negType)) {
-            emit("pop rbx");
-            emit("pop rax");
             if (termType == VarType.INT) {
+                emit("pop rbx");
+                emit("pop rax");
                 let c = n.children[1].token.lexeme;
                 //console.log(c);
                 switch (c) {
@@ -133,8 +139,26 @@ function termNodeCode(n: TreeNode): VarType {
                     default:
                         throw new Error("WRONG SYMBOL");
                 }
+                return VarType.INT;
+
+            } else if (termType == VarType.FLOAT) {
+                floatPop("xmm1");
+                floatPop("xmm0");
+                let c = n.children[1].token.lexeme;
+                switch (c) {
+                    case "*":
+                        emit("mulsd xmm0, xmm1");
+                        floatPush("xmm0");
+                        break;
+                    case "/":
+                        emit("divsd xmm0, xmm1");
+                        floatPush("xmm0")
+                        break;
+                    default:
+                        throw new Error("WRONG SYMBOL");
+                }
+                return VarType.FLOAT;
             }
-            return termType;
         } else {
             throw Error();
         }
@@ -144,17 +168,25 @@ function termNodeCode(n: TreeNode): VarType {
 function negNodeCode(n: TreeNode): VarType {
     //console.log("neg");
     if (n.children.length == 1) {
-        ////console.log(n.children[0]);
+        //console.log(n.children[0]);
         return factorNodeCode(n.children[0]);
     } else {
         let negType = negNodeCode(n.children[1]);
+        //console.log(negType);
         if (negType == VarType.INT) {
             emit("pop rax");
             emit("mov qword rbx, 0");
             emit("sub rbx, rax");
             emit("push rbx");
 
-            return negType;
+            return VarType.INT;
+        } else if (negType == VarType.FLOAT) {
+            emit("movq xmm0, [rsp]");
+            emit("xorps xmm1, xmm1");
+            emit("subsd xmm1, xmm0");
+            emit("movq [rsp], xmm1");
+
+            return VarType.FLOAT;
         }
     }
 }
@@ -167,9 +199,21 @@ function factorNodeCode(n: TreeNode): VarType {
     ////console.log(child);
     switch (child.sym) {
         case "NUM":
-            let v = parseInt(child.token.lexeme, 10);
-            emit(`push qword ${v}`);
+            let i = parseInt(child.token.lexeme, 10);
+            emit(`push qword ${i}`);
             return VarType.INT;
+        case "FPNUM":
+            let f = parseFloat(child.token.lexeme);
+            let fs = f.toString();
+            if (!fs.includes('.')) {
+                fs += '.0';
+                emit(`mov rax, __float64__(${fs})`);
+                emit("push rax");
+                return VarType.FLOAT;
+            }
+            emit(`mov rax, __float64__(${f})`);
+            emit("push rax");
+            return VarType.FLOAT;
         case "LP":
             return exprNodeCode(n.children[1]);
         default:
@@ -185,36 +229,46 @@ function sumNodeCode(n: TreeNode): VarType {
         let sumType = sumNodeCode(n.children[0]);
         let termType = termNodeCode(n.children[2]);
 
-        if (!isSameType(sumType, termType)) {
+        //console.log("sumT", sumType, "termT", termType);
+        if (sumType != termType) {
             throw new Error();
-        } else {
-            let reg1, reg2: string;
+        } 
 
-            if (sumType == VarType.INT) {
-                reg1 = "rax";
-                reg2 = "rbx";
-            } else {
-                reg1 = "xmm0";
-                reg2 = "xmm1";
-            }
+        if (sumType == VarType.INT) {
 
-            emit(`pop ${reg2}`);
-            emit(`pop ${reg1}`);
+            emit(`pop rbx`);
+            emit(`pop rax`);
 
             switch (n.children[1].sym) {
                 case "PLUS":
-                    emit(`add ${reg1}, ${reg2}`);
+                    emit(`add rax, rbx`);
                     break;
                 case "MINUS":
-                    emit(`sub ${reg1}, ${reg2}`);
+                    emit(`sub rax, rbx`);
                     break;
                 default:
                     ICE();
             }
+            emit(`push rax`);
+            return VarType.INT;
+        } else if (sumType == VarType.FLOAT) {
+            floatPop("xmm1");
+            floatPop("xmm0");
 
-            emit(`push ${reg1}`);
-            return sumType;
+            switch (n.children[1].sym) {
+                case "PLUS":
+                    emit("addsd xmm0, xmm1");
+                    break;
+                case "MINUS":
+                    emit("subsd xmm0, xmm1");
+                    break;
+                default:
+                    ICE();
+            }
+            floatPush("xmm0");
+            return VarType.FLOAT;
         }
+        
     }
 }
 
@@ -228,14 +282,9 @@ function relexpNodeCode(n: TreeNode): VarType {
         let sum2Type = sumNodeCode(n.children[2]);
         //console.log("sum1Type", sum1Type, "sum2Type", sum2Type);
         if (isSameType(sum1Type, sum2Type)) {
-            let reg: string;
 
-            if (sum1Type == VarType.INT) {
-                reg = "rax";
-            }
-
-            emit(`pop ${reg}`);
-            emit(`cmp [rsp], ${reg}`);
+            emit(`pop rax`);
+            emit(`cmp [rsp], rax`);
 
             //console.log(n.children[1].token.lexeme);
             switch (n.children[1].token.lexeme) {
@@ -248,31 +297,35 @@ function relexpNodeCode(n: TreeNode): VarType {
                 default: ICE();
             }
 
-            emit(`movzx qword ${reg}, al`);
-            emit(`mov [rsp], ${reg}`);
+            emit(`movzx qword rax, al`);
+            emit(`mov [rsp], rax`);
 
-            return sum1Type;
+            return VarType.INT;
+        } else {
+            throw new Error();
         }
     }
 }
 
 function convertStackTopToZeroOrOneInteger(type: VarType) {
     //console.log("convert");
-    let reg: string;
     ////console.log(type);
     if (type != VarType.INT && type != VarType.FLOAT) {
         throw new Error("INCORRECT VARTYPE");
     }
 
     if (type == VarType.INT) {
-        reg = "rax";
-    } else {
-        reg = "xmm0";
+        emit("cmp qword [rsp], 0");
+        emit("setne al");
+        emit(`movzx rax, al`);
+        emit(`mov [rsp], rax`);
+    } else if (type == VarType.FLOAT) {
+        floatPop("xmm0");
+        emit("xorps xmm1, xmm1");
+        emit("cmpneqsd xmm0, xmm1");
+        floatPush("xmm0");
+        emit("and qword [rsp], 1");
     }
-    emit("cmp qword [rsp], 0");
-    emit("setne al");
-    emit(`movzx ${reg}, al`);
-    emit(`mov [rsp], ${reg}`);
 }
 
 function orexpNodeCode(n: TreeNode): VarType {
@@ -367,6 +420,16 @@ function isSameType(a: VarType, b: VarType): boolean {
     }
 
     return false;
+}
+
+function floatPop(reg: string) {
+    emit(`movq ${reg}, [rsp]`);
+    emit("add rsp, 8");
+}
+
+function floatPush(reg: string) {
+    emit("sub rsp, 8");
+    emit(`movq [rsp], ${reg}`);
 }
 
 function ICE() {
